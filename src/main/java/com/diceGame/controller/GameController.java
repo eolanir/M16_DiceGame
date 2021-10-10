@@ -17,60 +17,60 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.diceGame.dao.GameRepository;
-import com.diceGame.dao.UserRepository;
+import com.diceGame.dao.PlayerRepository;
 import com.diceGame.dto.GameDTO;
-import com.diceGame.dto.UserDTO;
+import com.diceGame.dto.PlayerDTO;
 import com.diceGame.model.Game;
-import com.diceGame.model.User;
+import com.diceGame.model.Player;
 
 @RestController
 @RequestMapping("/players")
 public class GameController {
 	
 	@Autowired
-	private UserRepository userRepo;
+	private PlayerRepository playerRepo;
 
 	@Autowired
 	private GameRepository gameRepo;
 	
 	//CREATE PLAYER
 	@PostMapping
-	public ResponseEntity<String> createUser(@RequestBody User user){
+	public ResponseEntity<String> createPlayer(@RequestBody Player player){
 		//Create an optional user looking for players with the selected name
-		Optional<User> optionalUser = userRepo.findByName(user.getName());
+		Optional<Player> optionalPlayer = playerRepo.findByName(player.getName());
 		
 		//If player name is already taken, throw a bad request status
-		User newUser;
-		if(optionalUser.isPresent()) {
+		Player newPlayer;
+		if(optionalPlayer.isPresent()) {
 			return ResponseEntity.badRequest().body("Player already exist.");
 		} else {
 			//Create the object and generate the current date to add it as registration date
 			LocalDate localDate = LocalDate.now();
-			user.setDate(localDate.toString());
-			newUser = user;
+			player.setDate(localDate.toString());
+			newPlayer = player;
 			
 			//If the name is empty, create an Anonymous player
-			if(user.getName()==null||user.getName().equals("")) {
-				user.setName("Anonymous");
-				newUser = userRepo.save(user);
+			if(player.getName()==null||player.getName().equals("")) {
+				player.setName("Anonymous");
+				newPlayer = playerRepo.save(player);
 			} else {
-				newUser = userRepo.save(user);
+				newPlayer = playerRepo.save(player);
 			}
 		}
-		return ResponseEntity.ok("Player created as " + newUser.getName() + " and Id: " + newUser.getId());
+		return ResponseEntity.ok("Player created as " + newPlayer.getName() + " and Id: " + newPlayer.getId());
 	}
 	
 	//EDIT PLAYER
 	@PutMapping
-	public ResponseEntity<UserDTO> editUser(@RequestBody User form){
+	public ResponseEntity<PlayerDTO> editPlayer(@RequestBody Player form){
 		//Get an instance of the player with the selected Id
-		Optional<User> optionalUser = userRepo.findById(form.getId());
+		Optional<Player> optionalPlayer = playerRepo.findById(form.getId());
 		
-		if(optionalUser.isPresent()) {
+		if(optionalPlayer.isPresent()) {
 			//Find an user with the selected name and if it exists and not "Anonymous", return a bad request
-			Optional<User> tempUser = userRepo.findByName(form.getName());
-			if(tempUser.isPresent() 
-					&& tempUser.get().getName().equals(form.getName()) 
+			Optional<Player> tempPlayer = playerRepo.findByName(form.getName());
+			if(tempPlayer.isPresent() 
+					&& tempPlayer.get().getName().equals(form.getName()) 
 					&& !form.getName().equals("Anonymous")) {
 				return ResponseEntity.badRequest().build();
 			} else {
@@ -78,10 +78,10 @@ public class GameController {
 				if(form.getName().equals("")) {
 					form.setName("Anonymous");
 				}
-				User updateUser = optionalUser.get();
+				Player updateUser = optionalPlayer.get();
 				updateUser.setName(form.getName());
-				UserDTO dto = new UserDTO(updateUser);
-				userRepo.save(updateUser);
+				PlayerDTO dto = new PlayerDTO(updateUser);
+				playerRepo.save(updateUser);
 				return ResponseEntity.ok(dto);
 			}
 		} else {
@@ -91,21 +91,21 @@ public class GameController {
 	}
 	
 	//PLAY GAME
-	@PostMapping ("/{user_id}/games")
-	public ResponseEntity<GameDTO> playGame(@PathVariable("user_id") String userId){
-		Optional<User> optionalUser = userRepo.findById(userId);
+	@PostMapping ("/{player_id}/games")
+	public ResponseEntity<GameDTO> playGame(@PathVariable("player_id") String playerId){
+		Optional<Player> optionalPlayer = playerRepo.findById(playerId);
 		//If the player with selected Id exist, create random numbers from 1 to 6 
-		if(optionalUser.isPresent()) {
+		if(optionalPlayer.isPresent()) {
 			int a = (int) Math.ceil(Math.random()*6);
 			int b = (int) Math.ceil(Math.random()*6);
 			//Create and save the game with the User Id
-			Game newGame = new Game(a, b, optionalUser.get());
+			Game newGame = new Game(a, b, optionalPlayer.get());
 			gameRepo.save(newGame);
-			optionalUser.get().addGame();
+			optionalPlayer.get().addGame();
 			if(newGame.getResult().equals("Win")) {
-				optionalUser.get().addWins();
+				optionalPlayer.get().addWins();
 			}
-			userRepo.save(optionalUser.get());
+			playerRepo.save(optionalPlayer.get());
 			GameDTO dto = new GameDTO(newGame.getId(), newGame.getDice1(), newGame.getDice2(), newGame.getResult());
 			return ResponseEntity.ok(dto);
 		} else {
@@ -115,17 +115,17 @@ public class GameController {
 	}
 	
 	//DELETE GAMES
-	@DeleteMapping ("/{user_id}/games")
-	public ResponseEntity<String> deleteGames(@PathVariable("user_id") String userId){
+	@DeleteMapping ("/{player_id}/games")
+	public ResponseEntity<String> deleteGames(@PathVariable("player_id") String playerId){
 		//Find all games by the player Id and delete them
-		Optional<User> user = userRepo.findById(userId);
+		Optional<Player> user = playerRepo.findById(playerId);
 		if(user.isPresent()) {
 			List<Game> games = gameRepo.findAllByUser(user.get());
 			user.get().setWins(0);
 			user.get().setGames(0);
 			gameRepo.deleteAll(games);
-			userRepo.save(user.get());
-			return ResponseEntity.ok("Deleted games from the player with Id " + userId);
+			playerRepo.save(user.get());
+			return ResponseEntity.ok("Deleted games from the player with Id " + playerId);
 		} else {
 			return ResponseEntity.notFound().build();
 		}
@@ -133,20 +133,20 @@ public class GameController {
 	
 	//FIND ALL PLAYERS
 	@GetMapping
-	public ResponseEntity<List<UserDTO>> getUsers(){
+	public ResponseEntity<List<PlayerDTO>> getPlayers(){
 		//Find all users
-		List<User> users = userRepo.findAll();
-		List<UserDTO> dto = new ArrayList<UserDTO>();
-		for(User i : users) {
-			dto.add(new UserDTO(i));
+		List<Player> players = playerRepo.findAll();
+		List<PlayerDTO> dto = new ArrayList<PlayerDTO>();
+		for(Player i : players) {
+			dto.add(new PlayerDTO(i));
 		}
 		return ResponseEntity.ok(dto);
 	}
 	
 	//FIND PLAYER GAMES
-	@GetMapping("/{user_id}/games")
-	public ResponseEntity<List<GameDTO>> getUserGames(@PathVariable("user_id") String userId){
-		Optional<User> optionalUser = userRepo.findById(userId);
+	@GetMapping("/{player_id}/games")
+	public ResponseEntity<List<GameDTO>> getPlayerGames(@PathVariable("player_id") String playerId){
+		Optional<Player> optionalUser = playerRepo.findById(playerId);
 		if(optionalUser.isPresent()) {
 			List<Game> games = gameRepo.findAllByUser(optionalUser.get());
 			List<GameDTO> dto = new ArrayList<GameDTO>();
@@ -178,30 +178,30 @@ public class GameController {
 	
 	//GET LOSER
 	@GetMapping("/ranking/loser")
-	public ResponseEntity<UserDTO> getLoser(){
-		List<User> users = userRepo.findAll();
-		List<UserDTO> dtoList = new ArrayList<UserDTO>();
-		for(User i : users) {
-			dtoList.add(new UserDTO(i));
+	public ResponseEntity<PlayerDTO> getLoser(){
+		List<Player> players = playerRepo.findAll();
+		List<PlayerDTO> dtoList = new ArrayList<PlayerDTO>();
+		for(Player i : players) {
+			dtoList.add(new PlayerDTO(i));
 		}
 		Collections.sort(dtoList, (a, b) -> Double.compare(Double.parseDouble(b.getRate().replace("%", ""))
 														, Double.parseDouble(a.getRate().replace("%", ""))));
 		Collections.reverse(dtoList);
-		UserDTO loser = dtoList.get(0);
+		PlayerDTO loser = dtoList.get(0);
 		return ResponseEntity.ok(loser);
 	}
 	
 	//GET WINNER
 	@GetMapping("/ranking/winner")
-	public ResponseEntity<UserDTO> getWinner(){
-		List<User> users = userRepo.findAll();
-		List<UserDTO> dtoList = new ArrayList<UserDTO>();
-		for(User i : users) {
-			dtoList.add(new UserDTO(i));
+	public ResponseEntity<PlayerDTO> getWinner(){
+		List<Player> players = playerRepo.findAll();
+		List<PlayerDTO> dtoList = new ArrayList<PlayerDTO>();
+		for(Player i : players) {
+			dtoList.add(new PlayerDTO(i));
 		}
 		Collections.sort(dtoList, (a, b) -> Double.compare(Double.parseDouble(b.getRate().replace("%", ""))
 														, Double.parseDouble(a.getRate().replace("%", ""))));
-		UserDTO winner = dtoList.get(0);
+		PlayerDTO winner = dtoList.get(0);
 		return ResponseEntity.ok(winner);
 	}
 }
