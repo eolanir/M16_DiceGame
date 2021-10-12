@@ -1,28 +1,28 @@
 package com.diceGame.dto;
 
-import com.diceGame.model.User;
+import com.diceGame.model.Player;
 
-public class UserDTO {
+public class PlayerDTO {
 	private String id;
 	private String name;
 	private String date;
 	private String rate;
 	
-	public UserDTO(String id, String name, String date, double rate) {
+	public PlayerDTO(String id, String name, String date, double rate) {
 		this.id=id;
 		this.name=name;
 		this.date=date;
 		this.rate=rate + "%";
 	}
 	
-	public UserDTO(User user) {
-		this.id = user.getId();
-		this.name = user.getName();
-		this.date = user.getDate();
-		if(user.getGames()==0) {
+	public PlayerDTO(Player player) {
+		this.id = player.getId();
+		this.name = player.getName();
+		this.date = player.getDate();
+		if(player.getGames()==0) {
 			this.rate = "0%";
 		} else {
-		this.rate = user.getWins()/user.getGames()*100 + "%";
+		this.rate = player.getWins()/player.getGames()*100 + "%";
 		}
 	}
 

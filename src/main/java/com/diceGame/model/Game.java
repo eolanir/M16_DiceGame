@@ -17,13 +17,13 @@ public class Game {
 	@Field(name="result")
 	private String result;
 	@DBRef
-	private User user;
+	private Player user;
 	
 	Game() {
 		
 	}
 	
-	public Game (int dice1, int dice2, User user) {
+	public Game (int dice1, int dice2, Player user) {
 		this.dice1 = dice1;
 		this.dice2 = dice2;
 		this.user = user;
@@ -58,10 +58,10 @@ public class Game {
 	public void setResult(String result) {
 		this.result = result;
 	}
-	public User getUser() {
+	public Player getUser() {
 		return user;
 	}
-	public void setUser(User user) {
+	public void setUser(Player user) {
 		this.user = user;
 	}
 	
